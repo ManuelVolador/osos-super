@@ -88,30 +88,32 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="w-full sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
       {/* Main Navigation Bar */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-3 sm:gap-6">
-          {/* Logo & Brand Identity */}
-          <a
-            href="index.html"
-            onClick={(e) => handleNavView(e, 'inicio')}
-            className="flex items-center gap-2.5 shrink-0 group select-none text-decoration-none cursor-pointer"
-            aria-label="Supermercado Osos"
-          >
-            <img
-              src={logoImg}
-              alt="Supermercado Osos"
-              className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-103"
-            />
-            <div className="sr-only">
-              <span style={{ fontFamily: "ui-rounded, 'Arial Rounded MT Bold', sans-serif" }}>
-                OSOS
-              </span>
-              <span>Supermercado</span>
-            </div>
-          </a>
+          {/* Logo & Brand Identity (Centered on mobile with only logo, left-aligned on desktop) */}
+          <div className="w-full md:w-auto flex justify-center md:justify-start">
+            <a
+              href="index.html"
+              onClick={(e) => handleNavView(e, 'inicio')}
+              className="flex items-center gap-2.5 shrink-0 group select-none text-decoration-none cursor-pointer"
+              aria-label="Supermercado Osos"
+            >
+              <img
+                src={logoImg}
+                alt="Supermercado Osos"
+                className="h-8 sm:h-9 md:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-103"
+              />
+              <div className="sr-only">
+                <span style={{ fontFamily: "ui-rounded, 'Arial Rounded MT Bold', sans-serif" }}>
+                  OSOS
+                </span>
+                <span>Supermercado</span>
+              </div>
+            </a>
+          </div>
 
-          {/* Delivery Location Selector */}
-          <div className="relative hidden sm:block">
+          {/* Delivery Location Selector (Desktop Only) */}
+          <div className="relative hidden md:block">
             <button
               type="button"
               onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
@@ -179,8 +181,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Right Cluster: Cart Button & Action Button */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Right Cluster: Cart Button & Action Button (Desktop Only) */}
+          <div className="hidden md:flex items-center gap-2 sm:gap-3">
             {/* Slide-over Cart Trigger (Pure Icon Button with Offset Clear Counter Badge) */}
             <button
               type="button"
@@ -203,16 +205,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="inline-flex items-center gap-1.5 bg-[#F06522] hover:bg-[#ea580c] text-white text-xs sm:text-sm font-semibold rounded-lg px-4 sm:px-5 py-2 sm:py-2.5 shadow-md shadow-orange-950/10 hover:shadow-orange-500/25 transition-all active:scale-95 cursor-pointer"
             >
               <span>Hacer Pedido</span>
-            </button>
-
-            {/* Mobile Hamburger Toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl hover:bg-stone-100 text-stone-700 transition-colors cursor-pointer"
-              aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-            >
-              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
         </div>
@@ -305,7 +297,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer / Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-stone-200 bg-white p-4 space-y-3 animate-in slide-in-from-top-2 duration-150 shadow-lg max-h-[85vh] overflow-y-auto">
+        <div className="md:hidden border-t border-stone-200 bg-white p-4 space-y-3 animate-in slide-in-from-top-2 duration-150 shadow-lg max-h-[calc(100vh-130px)] overflow-y-auto">
           {/* Mobile Search */}
           <div className="relative">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
@@ -443,11 +435,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Ergonomic Bottom Action Bar (Thumb-Zone Friendly & No Occlusion) */}
       <aside aria-label="Navegación rápida inferior móvil" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/96 backdrop-blur-md border-t border-stone-200/90 py-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-4px_20px_rgba(40,25,15,0.08)]">
+        {/* 1. Inicio */}
         <button
           type="button"
           onClick={() => onNavigateView?.('inicio')}
           aria-label="Ir a página de Inicio"
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
             activeView === 'inicio' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
           }`}
         >
@@ -455,11 +448,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[10px] tracking-tight">Inicio</span>
         </button>
 
+        {/* 2. Catálogo */}
         <button
           type="button"
           onClick={() => onNavigateView?.('catalogo')}
           aria-label="Ir a catálogo completo de productos"
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
             activeView === 'catalogo' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
           }`}
         >
@@ -467,12 +461,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[10px] tracking-tight">Catálogo</span>
         </button>
 
+        {/* 3. WhatsApp */}
         <a
           href="https://wa.me/573105550199"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Contactar por WhatsApp a domicilios"
-          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-emerald-600 hover:text-emerald-700 transition-all active:scale-95"
+          className="min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-emerald-600 hover:text-emerald-700 transition-all active:scale-95"
         >
           <div className="relative">
             <Phone size={19} className="stroke-[2.5]" />
@@ -481,11 +476,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="text-[10px] font-semibold tracking-tight">WhatsApp</span>
         </a>
 
+        {/* 4. Canasta */}
         <button
           type="button"
           onClick={onOpenCart}
           aria-label={`Abrir canasta con ${cartCount} productos`}
-          className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-stone-700 hover:text-[#F06522] transition-all active:scale-95 cursor-pointer"
+          className="min-h-[44px] relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-stone-700 hover:text-[#F06522] transition-all active:scale-95 cursor-pointer"
         >
           <div className="relative">
             <ShoppingCart size={19} className="stroke-2" />
@@ -498,11 +494,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </span>
         </button>
 
+        {/* 5. Menú */}
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Alternar menú inferior"
-          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
             mobileMenuOpen ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
           }`}
         >

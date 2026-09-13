@@ -427,6 +427,61 @@ describe('Navbar Component', () => {
     // Drawer should have closed after navigation click
     expect(screen.queryByLabelText('Cerrar menú')).toBeNull();
   });
+
+  it('renders dedicated mobile layout with logo-only top header and 5-action bottom bar (Inicio, Catálogo, WhatsApp, Canasta, Menú)', () => {
+    const handleOpenCart = vi.fn();
+    const handleNavigateView = vi.fn();
+
+    const { container } = render(
+      <Navbar
+        cartCount={4}
+        onOpenCart={handleOpenCart}
+        onNavigateView={handleNavigateView}
+        activeView="inicio"
+      />
+    );
+
+    // Top Header: verifies logo is centered and desktop cluster is strictly hidden on mobile (hidden md:flex)
+    const brandLogo = screen.getByAltText('Supermercado Osos');
+    expect(brandLogo).toBeDefined();
+    const topCluster = container.querySelector('.hidden.md\\:flex');
+    expect(topCluster).toBeDefined();
+
+    // Bottom Action Bar: contains all 5 required actions
+    const bottomBar = container.querySelector('aside');
+    expect(bottomBar).toBeDefined();
+    expect(bottomBar?.className).toContain('md:hidden');
+    expect(bottomBar?.className).toContain('fixed bottom-0');
+
+    // 1. Inicio
+    const inicioBtn = screen.getByRole('button', { name: /Ir a página de Inicio/i });
+    expect(inicioBtn).toBeDefined();
+    fireEvent.click(inicioBtn);
+    expect(handleNavigateView).toHaveBeenCalledWith('inicio');
+
+    // 2. Catálogo
+    const catalogoBtn = screen.getByRole('button', { name: /Ir a catálogo completo de productos/i });
+    expect(catalogoBtn).toBeDefined();
+    fireEvent.click(catalogoBtn);
+    expect(handleNavigateView).toHaveBeenCalledWith('catalogo');
+
+    // 3. WhatsApp
+    const whatsappLink = screen.getByRole('link', { name: /Contactar por WhatsApp/i });
+    expect(whatsappLink.getAttribute('href')).toContain('https://wa.me/573105550199');
+
+    // 4. Canasta
+    const canastaBtn = screen.getByRole('button', { name: /Abrir canasta con 4 productos/i });
+    expect(canastaBtn).toBeDefined();
+    expect(canastaBtn.textContent).toContain('Canasta (4)');
+    fireEvent.click(canastaBtn);
+    expect(handleOpenCart).toHaveBeenCalledTimes(1);
+
+    // 5. Menú
+    const menuBtn = screen.getByRole('button', { name: /Abrir menú/i });
+    expect(menuBtn).toBeDefined();
+    fireEvent.click(menuBtn);
+    expect(screen.getByRole('button', { name: /Cerrar menú/i })).toBeDefined();
+  });
 });
 
 describe('AdditionalServices Component (5 Strategic Services)', () => {

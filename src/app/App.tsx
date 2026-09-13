@@ -249,7 +249,7 @@ export const App: React.FC = () => {
   const totalCartPrice = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF8F5] text-stone-900 flex flex-col selection:bg-[#F06522] selection:text-white pb-14 md:pb-0">
+    <div className="min-h-screen w-full bg-[#FAF8F5] text-stone-900 flex flex-col selection:bg-[#F06522] selection:text-white pb-16 md:pb-0">
       {/* 0. Fancy Smooth Curtain Intro Animation */}
       {activeView !== 'admin' && (
         <CurtainIntro
