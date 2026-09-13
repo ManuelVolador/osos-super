@@ -86,7 +86,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="w-full sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
+    <>
+      <header className="w-full sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
       {/* Main Navigation Bar */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
         <div className="flex items-center justify-between gap-3 sm:gap-6">
@@ -294,10 +295,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </nav>
       </div>
+    </header>
 
-      {/* Mobile Drawer / Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-stone-200 bg-white p-4 space-y-3 animate-in slide-in-from-top-2 duration-150 shadow-lg max-h-[calc(100vh-130px)] overflow-y-auto">
+    {/* Mobile Drawer / Bottom Sheet */}
+    {mobileMenuOpen && (
+      <>
+        {/* Semi-transparent backdrop overlay */}
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+
+        {/* Bottom Sheet Menu: slides up from the bottom resting above the bottom bar */}
+        <div
+          role="dialog"
+          aria-label="Menú de navegación móvil"
+          className="md:hidden fixed bottom-[58px] left-0 right-0 z-50 bg-white border-t border-stone-200 rounded-t-2xl shadow-2xl p-4 pb-6 space-y-3 animate-in slide-in-from-bottom duration-200 max-h-[calc(80vh-58px)] overflow-y-auto"
+        >
+          {/* Bottom sheet drag indicator handle */}
+          <div className="w-10 h-1 bg-stone-300 rounded-full mx-auto mb-1" />
+
           {/* Mobile Search */}
           <div className="relative">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
@@ -431,83 +449,84 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Ver Mi Canasta ({cartCount})</span>
           </button>
         </div>
-      )}
+      </>
+    )}
 
-      {/* Mobile Ergonomic Bottom Action Bar (Thumb-Zone Friendly & No Occlusion) */}
-      <aside aria-label="Navegación rápida inferior móvil" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/96 backdrop-blur-md border-t border-stone-200/90 py-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-4px_20px_rgba(40,25,15,0.08)]">
-        {/* 1. Inicio */}
-        <button
-          type="button"
-          onClick={() => onNavigateView?.('inicio')}
-          aria-label="Ir a página de Inicio"
-          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
-            activeView === 'inicio' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
-          }`}
-        >
-          <Home size={19} className={activeView === 'inicio' ? 'stroke-[2.5]' : 'stroke-2'} />
-          <span className="text-[10px] tracking-tight">Inicio</span>
-        </button>
+    {/* Mobile Ergonomic Bottom Action Bar (Thumb-Zone Friendly & No Occlusion, Root-Level Fixed) */}
+    <aside aria-label="Navegación rápida inferior móvil" className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-md border-t border-stone-200/90 py-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-4px_20px_rgba(40,25,15,0.08)]">
+      {/* 1. Inicio */}
+      <button
+        type="button"
+        onClick={() => onNavigateView?.('inicio')}
+        aria-label="Ir a página de Inicio"
+        className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          activeView === 'inicio' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+        }`}
+      >
+        <Home size={19} className={activeView === 'inicio' ? 'stroke-[2.5]' : 'stroke-2'} />
+        <span className="text-[10px] tracking-tight">Inicio</span>
+      </button>
 
-        {/* 2. Catálogo */}
-        <button
-          type="button"
-          onClick={() => onNavigateView?.('catalogo')}
-          aria-label="Ir a catálogo completo de productos"
-          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
-            activeView === 'catalogo' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
-          }`}
-        >
-          <ShoppingBag size={19} className={activeView === 'catalogo' ? 'stroke-[2.5]' : 'stroke-2'} />
-          <span className="text-[10px] tracking-tight">Catálogo</span>
-        </button>
+      {/* 2. Catálogo */}
+      <button
+        type="button"
+        onClick={() => onNavigateView?.('catalogo')}
+        aria-label="Ir a catálogo completo de productos"
+        className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          activeView === 'catalogo' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+        }`}
+      >
+        <ShoppingBag size={19} className={activeView === 'catalogo' ? 'stroke-[2.5]' : 'stroke-2'} />
+        <span className="text-[10px] tracking-tight">Catálogo</span>
+      </button>
 
-        {/* 3. WhatsApp */}
-        <a
-          href="https://wa.me/573105550199"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Contactar por WhatsApp a domicilios"
-          className="min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-emerald-600 hover:text-emerald-700 transition-all active:scale-95"
-        >
-          <div className="relative">
-            <Phone size={19} className="stroke-[2.5]" />
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-xs bg-emerald-500 animate-pulse"></span>
-          </div>
-          <span className="text-[10px] font-semibold tracking-tight">WhatsApp</span>
-        </a>
+      {/* 3. WhatsApp */}
+      <a
+        href="https://wa.me/573105550199"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Contactar por WhatsApp a domicilios"
+        className="min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-emerald-600 hover:text-emerald-700 transition-all active:scale-95"
+      >
+        <div className="relative">
+          <Phone size={19} className="stroke-[2.5]" />
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-xs bg-emerald-500 animate-pulse"></span>
+        </div>
+        <span className="text-[10px] font-semibold tracking-tight">WhatsApp</span>
+      </a>
 
-        {/* 4. Canasta */}
-        <button
-          type="button"
-          onClick={onOpenCart}
-          aria-label={`Abrir canasta con ${cartCount} productos`}
-          className="min-h-[44px] relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-stone-700 hover:text-[#F06522] transition-all active:scale-95 cursor-pointer"
-        >
-          <div className="relative">
-            <ShoppingCart size={19} className="stroke-2" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#16a34a] rounded-xs border-2 border-white pointer-events-none"></span>
-            )}
-          </div>
-          <span className="text-[10px] font-semibold tracking-tight">
-            {cartCount > 0 ? `Canasta (${cartCount})` : 'Canasta'}
-          </span>
-        </button>
+      {/* 4. Canasta */}
+      <button
+        type="button"
+        onClick={onOpenCart}
+        aria-label={`Abrir canasta con ${cartCount} productos`}
+        className="min-h-[44px] relative flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl text-stone-700 hover:text-[#F06522] transition-all active:scale-95 cursor-pointer"
+      >
+        <div className="relative">
+          <ShoppingCart size={19} className="stroke-2" />
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#16a34a] rounded-xs border-2 border-white pointer-events-none"></span>
+          )}
+        </div>
+        <span className="text-[10px] font-semibold tracking-tight">
+          {cartCount > 0 ? `Canasta (${cartCount})` : 'Canasta'}
+        </span>
+      </button>
 
-        {/* 5. Menú */}
-        <button
-          type="button"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-          className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
-            mobileMenuOpen ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
-          }`}
-        >
-          {mobileMenuOpen ? <X size={19} className="stroke-[2.5]" /> : <Menu size={19} className="stroke-2" />}
-          <span className="text-[10px] tracking-tight">Menú</span>
-        </button>
-      </aside>
-    </header>
+      {/* 5. Menú */}
+      <button
+        type="button"
+        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+        className={`min-h-[44px] flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+          mobileMenuOpen ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+        }`}
+      >
+        {mobileMenuOpen ? <X size={19} className="stroke-[2.5]" /> : <Menu size={19} className="stroke-2" />}
+        <span className="text-[10px] tracking-tight">Menú</span>
+      </button>
+    </aside>
+  </>
   );
 };
 
