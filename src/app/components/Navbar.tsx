@@ -17,7 +17,7 @@ import {
 import logoImg from '../../assets/logo.png';
 import { SANTA_ROSA_LOCATIONS } from '../data/products';
 
-export type NavViewMode = 'inicio' | 'catalogo' | 'servicios' | 'avisos' | 'empleo' | 'contacto' | 'privacidad';
+export type NavViewMode = 'inicio' | 'catalogo' | 'servicios' | 'avisos' | 'empleo' | 'contacto' | 'privacidad' | 'admin';
 
 interface NavbarProps {
   cartCount?: number;
@@ -433,13 +433,83 @@ export const Navbar: React.FC<NavbarProps> = ({
               setMobileMenuOpen(false);
               onOpenCart?.();
             }}
-            className="w-full py-2.5 bg-[#F06522] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            className="w-full py-2.5 bg-[#F06522] hover:bg-[#d94f13] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-98 transition-all"
           >
             <ShoppingCart size={15} />
             <span>Ver Mi Canasta ({cartCount})</span>
           </button>
         </div>
       )}
+
+      {/* Mobile Ergonomic Bottom Action Bar (Thumb-Zone Friendly & No Occlusion) */}
+      <aside aria-label="Navegación rápida inferior móvil" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/96 backdrop-blur-md border-t border-stone-200/90 py-1.5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-4px_20px_rgba(40,25,15,0.08)]">
+        <button
+          type="button"
+          onClick={() => onNavigateView?.('inicio')}
+          aria-label="Ir a página de Inicio"
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+            activeView === 'inicio' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          <Home size={19} className={activeView === 'inicio' ? 'stroke-[2.5]' : 'stroke-2'} />
+          <span className="text-[10px] tracking-tight">Inicio</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigateView?.('catalogo')}
+          aria-label="Ir a catálogo completo de productos"
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+            activeView === 'catalogo' ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          <ShoppingBag size={19} className={activeView === 'catalogo' ? 'stroke-[2.5]' : 'stroke-2'} />
+          <span className="text-[10px] tracking-tight">Catálogo</span>
+        </button>
+
+        <a
+          href="https://wa.me/573105550199"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Contactar por WhatsApp a domicilios"
+          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-emerald-600 hover:text-emerald-700 transition-all active:scale-95"
+        >
+          <div className="relative">
+            <Phone size={19} className="stroke-[2.5]" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-xs bg-emerald-500 animate-pulse"></span>
+          </div>
+          <span className="text-[10px] font-semibold tracking-tight">WhatsApp</span>
+        </a>
+
+        <button
+          type="button"
+          onClick={onOpenCart}
+          aria-label={`Abrir canasta con ${cartCount} productos`}
+          className="relative flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl text-stone-700 hover:text-[#F06522] transition-all active:scale-95 cursor-pointer"
+        >
+          <div className="relative">
+            <ShoppingCart size={19} className="stroke-2" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#16a34a] rounded-xs border-2 border-white pointer-events-none"></span>
+            )}
+          </div>
+          <span className="text-[10px] font-semibold tracking-tight">
+            {cartCount > 0 ? `Canasta (${cartCount})` : 'Canasta'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Alternar menú inferior"
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all active:scale-95 cursor-pointer ${
+            mobileMenuOpen ? 'text-[#F06522] font-bold' : 'text-stone-600 hover:text-stone-900'
+          }`}
+        >
+          {mobileMenuOpen ? <X size={19} className="stroke-[2.5]" /> : <Menu size={19} className="stroke-2" />}
+          <span className="text-[10px] tracking-tight">Menú</span>
+        </button>
+      </aside>
     </header>
   );
 };

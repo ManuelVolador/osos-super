@@ -84,9 +84,15 @@ export async function initTursoDatabase(): Promise<void> {
           position TEXT,
           message TEXT,
           cv_filename TEXT,
+          status TEXT DEFAULT 'pendiente',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      try {
+        await tursoClient.execute(`ALTER TABLE job_applications ADD COLUMN status TEXT DEFAULT 'pendiente';`);
+      } catch {
+        // column already exists
+      }
 
       // 4. Subscribers table
       await tursoClient.execute(`
@@ -121,8 +127,25 @@ export async function initTursoDatabase(): Promise<void> {
           read_time TEXT,
           author TEXT,
           tag_color TEXT,
+          image TEXT,
           is_featured INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Safe migration for image column if table already exists
+      try {
+        await tursoClient.execute('ALTER TABLE notices ADD COLUMN image TEXT');
+      } catch {
+        // column already exists or table is fresh
+      }
+
+      // 7. Store Settings table
+      await tursoClient.execute(`
+        CREATE TABLE IF NOT EXISTS store_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
       `);
 
@@ -160,8 +183,8 @@ export async function initTursoDatabase(): Promise<void> {
         const count = Number(noticeCountRes.rows[0]?.count ?? 0);
         if (count === 0 && NOTICES.length > 0) {
           const noticeStatements = NOTICES.map((n, idx) => ({
-            sql: `INSERT OR IGNORE INTO notices (id, title, excerpt, content, category, date, read_time, author, tag_color, is_featured)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            sql: `INSERT OR IGNORE INTO notices (id, title, excerpt, content, category, date, read_time, author, tag_color, image, is_featured)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
               n.id,
               n.title,
@@ -172,6 +195,7 @@ export async function initTursoDatabase(): Promise<void> {
               n.readTime,
               n.author,
               n.tagColor,
+              n.image ?? null,
               idx === 0 ? 1 : 0,
             ],
           }));

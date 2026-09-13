@@ -1,24 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600;1,9..144,700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap');
+/* Arquitectura Tipográfica Minimalista & Boutique - Supermercado Osos */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap');
 
 :root {
+  /* Pila tipográfica funcional principal para texto de lectura, tablas, inputs y botones */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-poppins: 'Poppins', 'Plus Jakarta Sans', -apple-system, sans-serif;
-  --font-enid: 'Enid', 'Playfair Display', 'Cormorant Garamond', 'Fraunces', 'New Caledonia', 'Source Serif 4', Georgia, serif;
-  --font-editorial: var(--font-enid);
-  --font-caledonia: var(--font-enid);
-  --font-serif: var(--font-enid);
-  --font-serif-warm: var(--font-enid);
-  --font-serif-fresh: var(--font-enid);
+
+  /* Pila tipográfica minimalista para titulares, nombres de productos, precios y banners */
+  --font-display: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+
+  /* Mapeo de tokens heredados para transición sin fisuras hacia la estética minimalista */
+  --font-editorial: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-serif-warm: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-serif-fresh: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-poppins: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-enid: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-caledonia: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-serif: 'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-inter: var(--font-sans);
-  --font-instrument-serif: var(--font-serif);
+
+  /* Acento editorial itálico opcional para citas o notas de tradición local */
+  --font-accent: 'Newsreader', Georgia, serif;
+  --font-instrument-serif: var(--font-accent);
+
+  /* Datos numéricos, códigos de pedido, PIN y registros operativos */
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 body {
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+/* Clases utilitarias de familia */
 .font-sans {
   font-family: var(--font-sans);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+.font-editorial {
+  font-family: var(--font-editorial);
+}
+
+.font-serif-warm {
+  font-family: var(--font-serif-warm);
+}
+
+.font-serif-fresh {
+  font-family: var(--font-serif-fresh);
 }
 
 .font-poppins {
@@ -29,18 +67,35 @@ body {
   font-family: var(--font-enid);
 }
 
-.font-editorial {
-  font-family: var(--font-editorial);
-}
-
 .font-caledonia {
   font-family: var(--font-caledonia);
 }
 
-.font-serif-warm {
-  font-family: var(--font-serif-warm);
+.font-accent {
+  font-family: var(--font-accent);
 }
 
-.font-serif-fresh {
-  font-family: var(--font-serif-fresh);
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Micro-utilidades tipográficas para acabado artesanal y minimalista */
+.tracking-tightest {
+  letter-spacing: -0.035em;
+}
+
+.tracking-display {
+  letter-spacing: -0.025em;
+}
+
+.tracking-subtle {
+  letter-spacing: -0.015em;
+}
+
+.tracking-kicker {
+  letter-spacing: 0.06em;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

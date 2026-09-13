@@ -1,23 +1,90 @@
 @import "./styles/fonts.css";
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
+  --font-editorial: var(--font-editorial);
+  --font-serif-warm: var(--font-serif-warm);
+  --font-accent: var(--font-accent);
+  --font-mono: var(--font-mono);
+}
+
+:root {
+  --color-primary: #F06522;
+  --color-primary-hover: #d94f13;
+  --color-primary-active: #b83e0a;
+  --color-brand-brown: #5A3825;
+  --color-brand-dark: #241711;
+  --color-brand-espresso: #140e0a;
+  --color-brand-bg: #FAF8F5;
+  --color-brand-card: #FFFFFF;
+  --color-brand-green: #16a34a;
+  --shadow-warm-sm: 0 1px 2px 0 rgba(40, 25, 15, 0.05);
+  --shadow-warm-md: 0 4px 12px -1px rgba(40, 25, 15, 0.08), 0 2px 4px -2px rgba(40, 25, 15, 0.04);
+  --shadow-warm-lg: 0 12px 24px -4px rgba(40, 25, 15, 0.12), 0 4px 8px -4px rgba(40, 25, 15, 0.04);
+}
+
 @layer base {
   * {
     box-sizing: border-box;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
   html, body {
     margin: 0;
     padding: 0;
     width: 100%;
     min-height: 100%;
-    background-color: #FAF8F5;
+    background-color: var(--color-brand-bg);
     font-family: var(--font-sans);
     color: #1c1917;
+    -webkit-tap-highlight-color: transparent;
   }
   #root {
     width: 100%;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+  }
+  
+  /* Focus visible accessibility ring */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Tactile micro-interaction utilities */
+.touch-press {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease;
+}
+.touch-press:active {
+  transform: scale(0.97);
+}
+
+/* Subtle warm scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F2EDE8;
+}
+::-webkit-scrollbar-thumb {
+  background: #D9D0C7;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #C4B8AD;
+}
+
+/* Mobile safe padding */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
   }
 }

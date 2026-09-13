@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import fs from 'node:fs';
 import path from 'node:path';
 import Navbar from './components/Navbar';
@@ -11,6 +11,10 @@ import ContactSection from './components/ContactSection';
 import CareersSection from './components/CareersSection';
 import NewsletterSection from './components/NewsletterSection';
 import PrivacyPolicyModal from './components/PrivacyPolicyModal';
+import { AdminPanel } from './components/AdminPanel';
+import InvoicePrintModal from './components/InvoicePrintModal';
+import { CurtainIntro } from './components/CurtainIntro';
+import { realtimeService } from '../services/realtimeService';
 import App from './App';
 import { tursoClient, getTursoClient, initTursoDatabase } from '../lib/turso';
 import * as orderService from '../services/orderService';
@@ -19,6 +23,7 @@ import * as careerService from '../services/careerService';
 import * as newsletterService from '../services/newsletterService';
 import * as contactService from '../services/contactService';
 import * as noticeService from '../services/noticeService';
+import * as settingsService from '../services/settingsService';
 
 const MOCK_ITEMS: CartItem[] = [
   {
@@ -460,6 +465,62 @@ describe('NoticeBoard Component (Canal de Avisos tipo Blog)', () => {
     fireEvent.click(screen.getByText('Cerrar Lectura'));
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('renders read-only notice board with zero public creation buttons (restricted to Admin Panel)', () => {
+    render(<NoticeBoard />);
+
+    // The public board must NOT have public creation buttons (now restricted to Admin Panel)
+    expect(screen.queryByText('Publicar Aviso')).toBeNull();
+    expect(screen.queryByText('Nueva Entrada')).toBeNull();
+    expect(screen.queryByText('Publicar Nuevo Aviso o Entrada de Blog')).toBeNull();
+  });
+
+  it('hides admin panel links from public Navbar and footers', () => {
+    render(
+      <Navbar
+        cartCount={0}
+        onOpenCart={() => {}}
+        searchQuery=""
+        onSearchChange={() => {}}
+        selectedCategory="todos"
+        onSelectCategory={() => {}}
+        currentLocation="Santa Rosa de Osos, Centro"
+        activeView="inicio"
+        onNavigateView={() => {}}
+      />
+    );
+
+    // Assert that no desktop or mobile link exposes Admin
+    expect(screen.queryByText('Admin')).toBeNull();
+    expect(screen.queryByText('Panel de Administración')).toBeNull();
+  });
+
+  it('renders admin view without the store public header, breadcrumbs, or public footer', () => {
+    const originalPathname = window.location.pathname;
+    // Set pathname to /admin.html so App initializes in admin mode
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, pathname: '/admin.html' },
+    });
+
+    render(<App />);
+
+    // In admin mode, public Navbar banner and search bar must NOT render
+    expect(screen.queryByPlaceholderText(/Busca entre \+500 productos frescos/i)).toBeNull();
+    expect(screen.queryByText(/Domicilios en Santa Rosa de Osos en menos de 35 min/i)).toBeNull();
+
+    // Breadcrumb must not render
+    expect(screen.queryByText('Panel de Administración y Control')).toBeNull();
+
+    // Public supermarket footer must not render
+    expect(screen.queryByText(/Supermercado Los Osos S\.A\.S/i)).toBeNull();
+
+    // Restore location pathname
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { ...window.location, pathname: originalPathname },
+    });
+  });
 });
 
 describe('ContactSection Component (Comunícate con nosotros)', () => {
@@ -598,9 +659,9 @@ describe('App Component (Full Supermarket Integration)', () => {
     // Confirms status badge "Santa Rosa de Osos, Antioquia • Tradición y Frescura" is removed
     expect(screen.queryByText('Santa Rosa de Osos, Antioquia • Tradición y Frescura')).toBeNull();
 
-    // Editorial headline with Poppins Specimen
+    // Minimalist headline with Outfit Display Typography
     const headline = screen.getByRole('heading', { level: 1 });
-    expect(headline.className).toContain('font-poppins');
+    expect(headline.className).toContain('font-display');
     expect(screen.getByText(/Todo lo que tu hogar necesita,/)).toBeDefined();
     const precioSpan = screen.getByText('fresco y al mejor precio');
     expect(precioSpan).toBeDefined();
@@ -625,8 +686,9 @@ describe('App Component (Full Supermarket Integration)', () => {
     expect(screen.getAllByText('Avisos Comunitarios').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Trabaja con Nosotros').length).toBeGreaterThan(0);
 
-    // Compact index footer exists
-    expect(screen.getAllByText(/ARANGO HERMANOS S\.A\.S/).length).toBeGreaterThan(0);
+    // Compact index footer removed from inicio - verify no footer on inicio
+    expect(container.querySelector('.bg-\\[\\#1c140e\\]')).toBeNull();
+    expect(container.querySelector('footer')).toBeNull();
     expect(screen.getAllByText(/Santa Rosa de Osos/).length).toBeGreaterThan(0);
   });
 
@@ -642,11 +704,14 @@ describe('App Component (Full Supermarket Integration)', () => {
     expect(screen.getAllByText(/Santa Rosa de Osos/).length).toBeGreaterThan(0);
   });
 
-  it('opens and reads Privacy Policy from footer link', () => {
+  it('opens and reads Privacy Policy from footer link in dedicated section', () => {
     render(<App />);
 
-    const privacyLinks = screen.getAllByText('Tratamiento de Datos');
-    fireEvent.click(privacyLinks[0]);
+    // Navigate to a dedicated section with comprehensive footer via navbar link
+    const serviciosLink = screen.getByRole('link', { name: /Servicios & Colanta/ });
+    fireEvent.click(serviciosLink);
+    const privacyBtn = screen.getByRole('button', { name: /Manual de Tratamiento de Datos Personales/i });
+    fireEvent.click(privacyBtn);
 
     expect(
       screen.getByText('MANUAL DE TRATAMIENTO DE DATOS PERSONALES ARANGO HERMANOS S.A.S')
@@ -671,7 +736,7 @@ describe('App Component (Full Supermarket Integration)', () => {
     expect(screen.getByText('¡Pedido Registrado!')).toBeDefined();
   });
 
-  it('verifies Domicilios label in Navbar, absence of Rastrear Domicilio, and clean footer without bullets', () => {
+  it('verifies Domicilios label in Navbar, absence of Rastrear Domicilio, and absence of footer in inicio', () => {
     const { container } = render(<App />);
 
     // Verify Navbar shows 'Domicilios' and not 'Santa Rosa Domicilios: 25-35 min'
@@ -681,10 +746,10 @@ describe('App Component (Full Supermarket Integration)', () => {
     // Verify 'Rastrear Domicilio' is completely removed from Hero and page
     expect(screen.queryByText('Rastrear Domicilio')).toBeNull();
 
-    // Verify footer compact text does not have divider dots '•'
+    // Verify no compact footer nor comprehensive footer in inicio
     const compactFooter = container.querySelector('.bg-\\[\\#1c140e\\]');
-    expect(compactFooter).toBeDefined();
-    expect(compactFooter?.textContent).not.toContain('•');
+    expect(compactFooter).toBeNull();
+    expect(container.querySelector('footer')).toBeNull();
   });
 
   it('closes active modals and drawers when Escape is pressed', () => {
@@ -749,6 +814,9 @@ describe('App Component (Full Supermarket Integration)', () => {
     const avisosNav = screen.getByRole('link', { name: /Avisos/ });
     fireEvent.click(avisosNav);
     expect(screen.getAllByText('Canal de Avisos & Novedades').length).toBeGreaterThan(0);
+    // Verify comprehensive footer is rendered in dedicated sections
+    expect(screen.getByRole('contentinfo')).toBeDefined();
+    expect(screen.getByRole('button', { name: /Manual de Tratamiento de Datos Personales/i })).toBeDefined();
 
     // Click 'Inicio' to return to hero without scroll
     const inicioNav = screen.getByRole('link', { name: /Inicio/ });
@@ -759,8 +827,8 @@ describe('App Component (Full Supermarket Integration)', () => {
     const topNav = screen.getByRole('navigation', { name: 'Navegación principal de secciones' });
     expect(topNav.textContent).not.toContain('Datos Personales');
 
-    // Verify 'Tratamiento de Datos' is present in the footer
-    expect(screen.getByRole('button', { name: 'Tratamiento de Datos' })).toBeDefined();
+    // Verify no footer is present in the Inicio view
+    expect(screen.queryByRole('contentinfo')).toBeNull();
   });
 
   it('verifies quote in AdditionalServices has no colored border and tags are neutral', () => {
@@ -952,6 +1020,27 @@ describe('App Component (Full Supermarket Integration)', () => {
       executeSpy.mockRestore();
     });
 
+    it('saves notices via noticeService.saveNotice with image support and merges with fetchNotices', async () => {
+      const created = await noticeService.saveNotice({
+        title: 'Novedad de Granos Andinos del Norte',
+        category: 'Campo Local',
+        summary: 'Nueva cosecha de frijol cargamanto y maíz capio.',
+        content: ['Llegaron 20 bultos frescos desde el campo santarrosano.'],
+        image: 'https://images.unsplash.com/photo-example-beans',
+        author: 'Comité de Productores',
+      });
+
+      expect(created.id).toBeDefined();
+      expect(created.title).toBe('Novedad de Granos Andinos del Norte');
+      expect(created.image).toBe('https://images.unsplash.com/photo-example-beans');
+
+      const all = await noticeService.fetchNotices();
+      const found = all.find((n) => n.id === created.id);
+      expect(found).toBeDefined();
+      expect(found?.image).toBe('https://images.unsplash.com/photo-example-beans');
+      expect(found?.author).toBe('Comité de Productores');
+    });
+
     it('integrates CareersSection UI submission with careerService.saveJobApplication', async () => {
       const saveSpy = vi.spyOn(careerService, 'saveJobApplication');
       render(<CareersSection />);
@@ -1108,4 +1197,549 @@ describe('App Component (Full Supermarket Integration)', () => {
       expect(contactContainer.querySelector('.inline-flex.bg-stone-100')).toBeNull();
     });
   });
+
+  describe('AdminPanel & Administration Services', () => {
+    beforeEach(() => {
+      sessionStorage.clear();
+      localStorage.clear();
+    });
+
+    it('renders PIN authentication gate and unlocks with valid admin PIN', async () => {
+      const { container } = render(<AdminPanel />);
+
+      // PIN Gate should display official brand logo
+      const gateLogo = container.querySelector('img[alt="Supermercado Osos"]');
+      expect(gateLogo).not.toBeNull();
+
+      // PIN Gate should be displayed
+      expect(screen.getByText('Seguridad Administrativa')).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Panel de Administración' })).toBeDefined();
+
+      const pinInput = screen.getByPlaceholderText(/Ingresa tu clave/i);
+      expect(screen.getByText('Acceder al Panel')).toBeDefined();
+
+      // Invalid PIN attempt
+      fireEvent.change(pinInput, { target: { value: 'wrongpin' } });
+      fireEvent.submit(pinInput.closest('form')!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/PIN incorrecto/i)).toBeDefined();
+      });
+
+      // Valid PIN attempt
+      fireEvent.change(pinInput, { target: { value: 'admin2026' } });
+      fireEvent.submit(pinInput.closest('form')!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Panel de Control/i)).toBeDefined();
+        expect(screen.getByText(/Administración integral de tienda/i)).toBeDefined();
+      });
+    });
+
+    it('navigates across all 8 admin tabs and displays respective workspaces', async () => {
+      sessionStorage.setItem('osos_admin_logged', 'true');
+      const { container } = render(<AdminPanel />);
+
+      // Wait for authenticated panel to render with brand logo
+      await waitFor(() => {
+        expect(screen.getByText(/Panel de Control/i)).toBeDefined();
+        const headerLogo = container.querySelector('img[alt="Supermercado Osos"]');
+        expect(headerLogo).not.toBeNull();
+      });
+
+      // Tab: Productos
+      fireEvent.click(screen.getByRole('button', { name: /Productos/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Gestión del Catálogo de Productos/i)).toBeDefined();
+        expect(screen.getByText(/Nuevo Producto/i)).toBeDefined();
+      });
+
+      // Tab: Pedidos
+      fireEvent.click(screen.getByRole('button', { name: /Pedidos/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Gestión de Pedidos en Línea/i)).toBeDefined();
+      });
+
+      // Tab: Avisos & Blog
+      fireEvent.click(screen.getByRole('button', { name: /Avisos & Blog/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Gestión de Avisos & Gaceta Oficial/i)).toBeDefined();
+        expect(screen.getByText(/Publicar Nuevo Aviso/i)).toBeDefined();
+      });
+
+      // Tab: Empleo
+      fireEvent.click(screen.getByRole('button', { name: /Empleo/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Convocatorias Laborales & Hojas de Vida/i)).toBeDefined();
+      });
+
+      // Tab: Mensajes
+      fireEvent.click(screen.getByRole('button', { name: /Mensajes/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Bandeja de Mensajes de Contacto & PQRS/i)).toBeDefined();
+      });
+
+      // Tab: Suscriptores
+      fireEvent.click(screen.getByRole('button', { name: /Boletín/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Base de Datos de Suscriptores/i)).toBeDefined();
+        expect(screen.getByText(/Copiar Todos los Correos/i)).toBeDefined();
+      });
+
+      // Tab: Ajustes
+      fireEvent.click(screen.getByRole('button', { name: /Ajustes/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Configuración General de Tienda/i)).toBeDefined();
+        expect(screen.getByText(/Línea Oficial WhatsApp para Pedidos/i)).toBeDefined();
+      });
+    });
+
+    it('verifies strict Anti-AI Slop invariants: zero rounded-full classes in AdminPanel', async () => {
+      sessionStorage.setItem('osos_admin_logged', 'true');
+      const { container } = render(<AdminPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Panel de Control/i)).toBeDefined();
+      });
+
+      expect(container.querySelectorAll('.rounded-full').length).toBe(0);
+    });
+
+    it('manages products lifecycle with saveProduct and deleteProduct', async () => {
+      const newProduct = {
+        id: 'prod-test-admin-1',
+        name: 'Quesito Santarrosano Artesanal 500g',
+        category: 'lacteos' as const,
+        categoryLabel: 'Lácteos',
+        price: 9800,
+        originalPrice: 11500,
+        unit: '500 g',
+        badge: 'Fresco Hoy',
+        badgeType: 'fresh' as const,
+        image: 'https://images.unsplash.com/photo-cheese',
+        description: 'Quesito tradicional campesino elaborado en Santa Rosa de Osos.',
+      };
+
+      const saved = await productService.saveProduct(newProduct);
+      expect(saved.id).toBe('prod-test-admin-1');
+
+      const allProds = await productService.fetchProducts();
+      const match = allProds.find((p) => p.id === 'prod-test-admin-1');
+      expect(match).toBeDefined();
+      expect(match?.name).toBe('Quesito Santarrosano Artesanal 500g');
+
+      // Delete product
+      const delSuccess = await productService.deleteProduct('prod-test-admin-1');
+      expect(delSuccess).toBe(true);
+
+      const afterDelProds = await productService.fetchProducts();
+      expect(afterDelProds.find((p) => p.id === 'prod-test-admin-1')).toBeUndefined();
+    });
+
+    it('manages order status updates and order deletion in orderService', async () => {
+      const testOrder = {
+        orderNumber: 'OSOS-TEST-999',
+        customerName: 'Mariana Arango',
+        customerPhone: '3123456789',
+        address: 'Calle 30 # 28-14',
+        neighborhood: 'Centro',
+        paymentMethod: 'contraentrega',
+        notes: 'Timbrar fuerte',
+        subtotal: 35000,
+        discount: 0,
+        shipping: 3000,
+        slot: 'Hoy Inmediato',
+        estimatedMinutes: '25-35 min',
+        total: 38000,
+        status: 'recibido' as const,
+        items: [
+          {
+            id: 'prod-aguacate',
+            name: 'Aguacate Hass',
+            price: 4900,
+            qty: 2,
+            unit: '1 kg',
+            image: '',
+            category: 'Frutas',
+          },
+        ],
+      };
+
+      await orderService.saveOrder(testOrder);
+
+      const ordersBefore = await orderService.getAllOrders();
+      expect(ordersBefore.some((o) => o.orderNumber === 'OSOS-TEST-999')).toBe(true);
+
+      // Update status
+      const updated = await orderService.updateOrderStatus('OSOS-TEST-999', 'en_ruta');
+      expect(updated).toBe(true);
+
+      const ordersAfterUpdate = await orderService.getAllOrders();
+      const updatedOrder = ordersAfterUpdate.find((o) => o.orderNumber === 'OSOS-TEST-999');
+      expect(updatedOrder?.status).toBe('en_ruta');
+
+      // Delete order
+      const deleted = await orderService.deleteOrder('OSOS-TEST-999');
+      expect(deleted).toBe(true);
+
+      const ordersAfterDel = await orderService.getAllOrders();
+      expect(ordersAfterDel.some((o) => o.orderNumber === 'OSOS-TEST-999')).toBe(false);
+    });
+
+    it('manages notice deletion via noticeService.deleteNotice', async () => {
+      const createdNotice = await noticeService.saveNotice({
+        title: 'Aviso de prueba para eliminación',
+        category: 'Promociones',
+        summary: 'Resumen de prueba',
+        content: ['Párrafo de prueba'],
+      });
+
+      const noticesBefore = await noticeService.fetchNotices();
+      expect(noticesBefore.some((n) => n.id === createdNotice.id)).toBe(true);
+
+      const deleted = await noticeService.deleteNotice(createdNotice.id);
+      expect(deleted).toBe(true);
+
+      const noticesAfter = await noticeService.fetchNotices();
+      expect(noticesAfter.some((n) => n.id === createdNotice.id)).toBe(false);
+    });
+
+    it('fetches and updates store settings via settingsService', async () => {
+      const initialSettings = await settingsService.fetchStoreSettings();
+      expect(initialSettings.storeName).toBe('Supermercado Osos');
+      expect(initialSettings.adminPin).toBe('admin2026');
+
+      const updatedSettings = {
+        ...initialSettings,
+        bannerNotice: '¡Lunes de carnes con 15% de descuento en Santa Rosa!',
+        deliveryFee: 4000,
+      };
+
+      const saved = await settingsService.saveStoreSettings(updatedSettings);
+      expect(saved.deliveryFee).toBe(4000);
+      expect(saved.bannerNotice).toBe('¡Lunes de carnes con 15% de descuento en Santa Rosa!');
+
+      const refetched = await settingsService.fetchStoreSettings();
+      expect(refetched.deliveryFee).toBe(4000);
+    });
+
+    it('renders InvoicePrintModal with 100% tables, official logo, DIAN resolution, and legal clauses', () => {
+      const mockOrder: orderService.PlacedOrder = {
+        orderNumber: 'OSOS-FACTURA-001',
+        customerName: 'Santiago Lopera',
+        customerPhone: '3104445566',
+        address: 'Barrio El Carmelo, Casa 4',
+        paymentMethod: 'Contra entrega (Efectivo / Datáfono)',
+        slot: 'Hoy 2:00 PM - 4:00 PM',
+        notes: 'Timbre número 2',
+        subtotal: 24700,
+        shipping: 3500,
+        total: 28200,
+        status: 'recibido',
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            id: 'p1',
+            name: 'Leche Entera Colanta Pasteurizada (1 L)',
+            price: 4200,
+            qty: 3,
+            unit: '1 Litro',
+            image: 'https://images.unsplash.com/milk',
+            category: 'Lácteos',
+          },
+          {
+            id: 'p2',
+            name: 'Pechuga de Pollo Campesino (1 kg)',
+            price: 12100,
+            qty: 1,
+            unit: '1 kg',
+            image: 'https://images.unsplash.com/chicken',
+            category: 'Carnes Colanta',
+          },
+        ],
+      };
+
+      const onCloseSpy = vi.fn();
+      const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
+
+      const { container } = render(
+        <InvoicePrintModal order={mockOrder} onClose={onCloseSpy} />
+      );
+
+      // Verify Official Header & Logo
+      const logo = container.querySelector('img[alt="Supermercado Osos"]') as HTMLImageElement;
+      expect(logo).not.toBeNull();
+      expect(screen.getAllByText(/FACTURA DE VENTA COMERCIAL/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/890\.984\.321-7/i)).toBeDefined();
+      expect(screen.getByText(/Resolución DIAN No\. 18764000001/i)).toBeDefined();
+      expect(screen.getAllByText(/OSOS-FACTURA-001/i).length).toBeGreaterThan(0);
+
+      // Verify Customer Table
+      expect(screen.getByText(/Santiago Lopera/i)).toBeDefined();
+      expect(screen.getByText(/Barrio El Carmelo, Casa 4/i)).toBeDefined();
+      expect(screen.getByText(/3104445566/i)).toBeDefined();
+
+      // Verify Product Items Table
+      expect(screen.getByText(/Leche Entera Colanta Pasteurizada \(1 L\)/i)).toBeDefined();
+      expect(screen.getByText(/Pechuga de Pollo Campesino \(1 kg\)/i)).toBeDefined();
+
+      // Verify Financial Totals Table
+      expect(screen.getByText(/Base Gravable/i)).toBeDefined();
+      expect(screen.getByText(/IVA Discriminado/i)).toBeDefined();
+      expect(screen.getByText(/\$28\.200/i)).toBeDefined();
+
+      // Verify Legal Negotiable Instrument Clause (Art. 774 Código de Comercio)
+      expect(screen.getByText(/Art\. 774 del Código de Comercio/i)).toBeDefined();
+
+      // Verify Pure Tables Architecture (at least 3 tables, zero cards)
+      const tables = container.querySelectorAll('table');
+      expect(tables.length).toBeGreaterThanOrEqual(3);
+
+      // Test Print Trigger
+      const printBtn = screen.getByRole('button', { name: /Imprimir/i });
+      fireEvent.click(printBtn);
+      expect(printSpy).toHaveBeenCalled();
+
+      // Test Close Trigger
+      const closeBtn = screen.getByLabelText(/Cerrar vista de factura/i);
+      fireEvent.click(closeBtn);
+      expect(onCloseSpy).toHaveBeenCalled();
+
+      printSpy.mockRestore();
+    });
+
+    it('broadcasts and subscribes to real-time order events via realtimeService', () => {
+      const receivedEvents: any[] = [];
+      const unsubscribe = realtimeService.subscribe((event) => {
+        receivedEvents.push(event);
+      });
+
+      const testOrder: orderService.PlacedOrder = {
+        orderNumber: 'OSOS-WS-REALTIME-001',
+        customerName: 'Mariana Gómez',
+        customerPhone: '3201112233',
+        address: 'Sector Los Lagos, Apto 302',
+        paymentMethod: 'Transferencia Bancolombia / Nequi',
+        slot: 'Hoy 4:00 PM - 6:00 PM',
+        subtotal: 18500,
+        shipping: 0,
+        total: 18500,
+        status: 'recibido',
+        createdAt: new Date().toISOString(),
+        items: [
+          {
+            id: 'p-queso',
+            name: 'Quesito Santarrosano',
+            price: 9800,
+            qty: 1,
+            unit: '500 g',
+            image: '',
+            category: 'Lácteos',
+          },
+        ],
+      };
+
+      // Broadcast new order
+      realtimeService.broadcastNewOrder(testOrder);
+      expect(receivedEvents.some((e) => e.type === 'ORDER_CREATED' && e.order?.orderNumber === 'OSOS-WS-REALTIME-001')).toBe(true);
+
+      // Broadcast status update
+      realtimeService.broadcastOrderStatus('OSOS-WS-REALTIME-001', 'en ruta');
+      expect(receivedEvents.some((e) => e.type === 'ORDER_STATUS_UPDATED' && e.status === 'en ruta')).toBe(true);
+
+      // Broadcast order deletion
+      realtimeService.broadcastOrderDeleted('OSOS-WS-REALTIME-001');
+      expect(receivedEvents.some((e) => e.type === 'ORDER_DELETED' && e.orderNumber === 'OSOS-WS-REALTIME-001')).toBe(true);
+
+      unsubscribe();
+    });
+
+    it('manages candidate review status updates via careerService', async () => {
+      const savedOk = await careerService.saveJobApplication({
+        fullName: 'Carlos Andrés Henao',
+        email: 'carlos.henao@example.com',
+        phone: '3157778899',
+        position: 'Alistamiento de Bodega',
+        message: 'Tengo 3 años de experiencia en logística de perecederos.',
+      });
+      expect(savedOk).toBe(true);
+
+      const apps = await careerService.fetchJobApplications();
+      const app = apps.find((a) => a.email === 'carlos.henao@example.com');
+      expect(app).toBeDefined();
+      expect(app?.status).toBe('pendiente');
+
+      // Update to 'en_revision'
+      const ok1 = await careerService.updateJobApplicationStatus(app!.id, 'en_revision');
+      expect(ok1).toBe(true);
+
+      // Update to 'entrevistado'
+      const ok2 = await careerService.updateJobApplicationStatus(app!.id, 'entrevistado');
+      expect(ok2).toBe(true);
+
+      // Update to 'seleccionado'
+      const ok3 = await careerService.updateJobApplicationStatus(app!.id, 'seleccionado');
+      expect(ok3).toBe(true);
+
+      const allApps = await careerService.fetchJobApplications();
+      const match = allApps.find((a) => a.id === app!.id);
+      expect(match?.status).toBe('seleccionado');
+    });
+
+    it('verifies enhanced Dashboard tables, removal of Sede Central text, and invoice integration in AdminPanel', async () => {
+      // Pre-seed an order so the orders table has at least 1 order to display
+      const testOrder = {
+        orderNumber: 'OSOS-TEST-INV-1',
+        customerName: 'Cliente Prueba Factura',
+        customerPhone: '3109998877',
+        address: 'Calle Real, Casa 10',
+        paymentMethod: 'Efectivo',
+        slot: 'Hoy 2:00 PM',
+        subtotal: 15000,
+        shipping: 3500,
+        total: 18500,
+        status: 'recibido' as const,
+        items: [
+          {
+            id: 'p1',
+            name: 'Pechuga Pollo',
+            price: 15000,
+            qty: 1,
+            unit: '1 kg',
+            image: '',
+            category: 'Carnes',
+          },
+        ],
+      };
+      await orderService.saveOrder(testOrder);
+
+      sessionStorage.setItem('osos_admin_logged', 'true');
+      render(<AdminPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText(/Panel de Control/i)).toBeDefined();
+      });
+
+      // Broadcast order via real-time service to simulate live WebSocket incoming order
+      realtimeService.broadcastNewOrder(testOrder);
+
+      await waitFor(() => {
+        expect(screen.getAllByText(/OSOS-TEST-INV-1/i).length).toBeGreaterThan(0);
+      });
+
+      // 1. Dashboard verified: High-productivity tables present
+      expect(screen.getByText(/Matriz Operativa & Desempeño Comercial/i)).toBeDefined();
+      expect(screen.getByText(/Monitor de Pedidos en Vivo/i)).toBeDefined();
+      expect(screen.getByText(/Distribución de Inventario por Pasillos/i)).toBeDefined();
+
+      // 2. Strict requirement: "Sede Central Supermercado Osos" block MUST BE REMOVED from Dashboard
+      expect(screen.queryByText(/^Sede Central Supermercado Osos$/i)).toBeNull();
+      expect(screen.queryByText(/Lunes a Sábado: 7:00 a\.m\./i)).toBeNull();
+
+      // 3. Technical badges removed from header
+      expect(screen.queryByText(/WebSockets En Vivo/i)).toBeNull();
+      expect(screen.queryByText(/Turso Conectado/i)).toBeNull();
+
+      // 4. Quick actions removed from Dashboard
+      expect(screen.queryByText(/^Acción Rápida$/i)).toBeNull();
+      expect(screen.queryByRole('button', { name: /Nuevo Producto/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Nuevo Aviso/i })).toBeNull();
+
+      // 5. Tab: Pedidos has Factura buttons
+      fireEvent.click(screen.getByRole('button', { name: /^Pedidos \(/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Gestión de Pedidos en Línea/i)).toBeDefined();
+        expect(screen.getAllByRole('button', { name: /Factura/i }).length).toBeGreaterThan(0);
+      });
+
+      const facturaButtons = screen.getAllByRole('button', { name: /Factura/i });
+      expect(facturaButtons.length).toBeGreaterThan(0);
+
+      // 4. Clicking Factura opens InvoicePrintModal
+      fireEvent.click(facturaButtons[0]);
+      await waitFor(() => {
+        expect(screen.getAllByText(/FACTURA DE VENTA COMERCIAL/i).length).toBeGreaterThan(0);
+        expect(screen.getByText(/Resolución DIAN No\. 18764000001/i)).toBeDefined();
+      });
+
+      // Close modal
+      fireEvent.click(screen.getByLabelText(/Cerrar vista de factura/i));
+      await waitFor(() => {
+        expect(screen.queryByText(/FACTURA DE VENTA COMERCIAL/i)).toBeNull();
+      });
+
+      // 5. Tab: Empleo shows postulation dates and review status dropdowns
+      fireEvent.click(screen.getByRole('button', { name: /Empleo/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/Convocatorias Laborales & Hojas de Vida/i)).toBeDefined();
+        expect(screen.getByText(/Fecha/i)).toBeDefined();
+        expect(screen.getByText(/Estado de Revisión/i)).toBeDefined();
+      });
+    });
+  });
+
+  describe('CurtainIntro Component (Animación de Cortina de Entrada)', () => {
+    it('renders centered brand logo on solid white panels without shadows or secondary text when forceShow is true', () => {
+      const { container } = render(<CurtainIntro forceShow={true} />);
+
+      const dialog = screen.getByRole('dialog', { name: /Presentación Supermercado Osos/i });
+      expect(dialog).toBeDefined();
+
+      // Brand logo is rendered without drop-shadow
+      const logoImg = screen.getByAltText('Supermercado Osos');
+      expect(logoImg).toBeDefined();
+      expect(logoImg.className).not.toContain('drop-shadow');
+
+      // Both top and bottom panels are white (bg-white)
+      const whitePanels = container.querySelectorAll('.bg-white');
+      expect(whitePanels.length).toBeGreaterThanOrEqual(2);
+
+      // Verify no extra secondary text is present (pure logo only)
+      expect(screen.queryByText(/Santa Rosa de Osos/i)).toBeNull();
+      expect(screen.queryByText(/Toca en cualquier parte/i)).toBeNull();
+    });
+
+    it('applies clean entrance transition styles to logo on initial mount and then smoothly holds', () => {
+      vi.useFakeTimers();
+      const { container } = render(<CurtainIntro forceShow={true} />);
+
+      const logoWrapper = container.querySelector('img[alt="Supermercado Osos"]')?.parentElement;
+      expect(logoWrapper).toBeDefined();
+
+      // Fast forward past entrance trigger (40ms) with act
+      act(() => {
+        vi.advanceTimersByTime(60);
+      });
+
+      expect(logoWrapper?.style.opacity).toBe('1');
+      expect(logoWrapper?.style.transform).toBe('scale(1) translate3d(0, 0, 0)');
+      vi.useRealTimers();
+    });
+
+    it('handles click-to-skip curtain and triggers onComplete', async () => {
+      vi.useFakeTimers();
+      const handleComplete = vi.fn();
+
+      render(<CurtainIntro forceShow={true} onComplete={handleComplete} />);
+
+      const dialog = screen.getByRole('dialog', { name: /Presentación Supermercado Osos/i });
+      fireEvent.click(dialog);
+
+      // Fast forward past skip timer (450ms)
+      vi.advanceTimersByTime(500);
+
+      expect(handleComplete).toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('unmounts and does not block DOM in standard test environment without forceShow', () => {
+      const handleComplete = vi.fn();
+      const { container } = render(<CurtainIntro onComplete={handleComplete} />);
+
+      // Under NODE_ENV === 'test', component returns null immediately and calls onComplete
+      expect(container.firstChild).toBeNull();
+      expect(handleComplete).toHaveBeenCalled();
+    });
+  });
 });
+

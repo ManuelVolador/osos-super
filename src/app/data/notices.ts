@@ -8,6 +8,8 @@ export interface Notice {
   content: string[];
   tagColor: string;
   author: string;
+  image?: string;
+  featured?: boolean;
 }
 
 export const NOTICES: Notice[] = [
@@ -19,6 +21,8 @@ export const NOTICES: Notice[] = [
     readTime: '3 min de lectura',
     tagColor: 'bg-stone-100 text-stone-700 border-stone-200',
     author: 'Maestro Carnicero Osos',
+    image: 'https://images.unsplash.com/photo-1603048588665-791ca8aea617?w=1000&q=80',
+    featured: true,
     summary: 'Recibimos cortes frescos seleccionados con la tradicional calidad lechera y ganadera del Norte antioqueño, listos para tu mesa.',
     content: [
       'En Supermercado Osos nos enorgullece contar con el respaldo de Carnicería Colanta, ofreciendo cortes de res y cerdo de la más alta terneza y frescura garantizada.',
@@ -35,6 +39,7 @@ export const NOTICES: Notice[] = [
     readTime: '2 min de lectura',
     tagColor: 'bg-stone-100 text-stone-700 border-stone-200',
     author: 'Departamento Comercial',
+    image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=800&q=80',
     summary: 'En colaboración con todos nuestros proveedores, estamos realizando permanentemente ofertas y descuentos para que puedas ahorrar en cada compra.',
     content: [
       'En colaboración con todos nuestros proveedores, estamos realizando permanentemente ofertas y descuentos para que puedas ahorrar.',
@@ -51,6 +56,7 @@ export const NOTICES: Notice[] = [
     readTime: '3 min de lectura',
     tagColor: 'bg-stone-100 text-stone-700 border-stone-200',
     author: 'Comité de Compras Agrícolas',
+    image: 'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?w=800&q=80',
     summary: 'Apoyamos el trabajo de los campesinos santarrosanos recibiendo a diario fresas seleccionadas, plátanos, aguacates y hortalizas de primera.',
     content: [
       'Cada madrugada llegan a nuestro supermercado canastillas repletas de fresas aromáticas cosechadas en las veredas altas de Santa Rosa de Osos, reconocidas por su dulzura natural.',
@@ -66,6 +72,7 @@ export const NOTICES: Notice[] = [
     readTime: '2 min de lectura',
     tagColor: 'bg-stone-100 text-stone-700 border-stone-200',
     author: 'Gerencia de Operaciones',
+    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
     summary: 'Conoce nuestras líneas de atención para hoteles, restaurantes, colegios y pedidos al por mayor con despacho prioritario.',
     content: [
       'Supermercado Osos pone a disposición su canal de Ventas Institucionales y Ventas al por Mayor con listas de precios preferenciales y facturación electrónica para entidades.',

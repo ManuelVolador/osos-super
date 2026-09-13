@@ -8,6 +8,7 @@ import CareersSection from './components/CareersSection';
 import ContactSection from './components/ContactSection';
 import NewsletterSection from './components/NewsletterSection';
 import PrivacyPolicyModal, { PrivacyPolicyContent } from './components/PrivacyPolicyModal';
+import { AdminPanel } from './components/AdminPanel';
 import { initTursoDatabase } from '../lib/turso';
 import { saveOrder } from '../services/orderService';
 import {
@@ -20,13 +21,15 @@ import heroVideo from '../assets/hero.mp4';
 import heroWebm from '../assets/hero.webm';
 import heroPoster from '../assets/hero-poster.jpg';
 import logoImg from '../assets/logo.png';
+import { CurtainIntro } from './components/CurtainIntro';
 import '../styles/fonts.css';
 
-export type ViewMode = 'inicio' | 'catalogo' | 'servicios' | 'avisos' | 'empleo' | 'contacto' | 'privacidad';
+export type ViewMode = 'inicio' | 'catalogo' | 'servicios' | 'avisos' | 'empleo' | 'contacto' | 'privacidad' | 'admin';
 
 const getInitialView = (): ViewMode => {
   if (typeof window === 'undefined') return 'inicio';
   const path = window.location.pathname.toLowerCase();
+  if (path.includes('admin')) return 'admin';
   if (path.includes('catalogo')) return 'catalogo';
   if (path.includes('servicios')) return 'servicios';
   if (path.includes('avisos')) return 'avisos';
@@ -100,17 +103,50 @@ export const App: React.FC = () => {
     }
   };
 
-  // Guarantee cross-browser video background autoplay
+  // Guarantee cross-browser video background autoplay on desktop and mobile
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Handled gracefully without error popups
-        });
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Direct DOM attribute assignments required for strict mobile WebKit (iOS Safari) and Blink (Android)
+    video.muted = true;
+    video.defaultMuted = true;
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.setAttribute('x5-playsinline', 'true');
+
+    const tryPlayVideo = () => {
+      if (video && video.paused) {
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Handled gracefully without error popups or breaking UI
+          });
+        }
       }
-    }
+    };
+
+    tryPlayVideo();
+
+    // Passive interaction fallback: iOS Low Power Mode and Android Battery Saver may postpone autoplay
+    // until the first lightweight user interaction (touch, tap, or scroll)
+    const handlePassiveInteraction = () => {
+      tryPlayVideo();
+      window.removeEventListener('touchstart', handlePassiveInteraction);
+      window.removeEventListener('pointerdown', handlePassiveInteraction);
+      window.removeEventListener('scroll', handlePassiveInteraction);
+    };
+
+    window.addEventListener('touchstart', handlePassiveInteraction, { passive: true, once: true });
+    window.addEventListener('pointerdown', handlePassiveInteraction, { passive: true, once: true });
+    window.addEventListener('scroll', handlePassiveInteraction, { passive: true, once: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handlePassiveInteraction);
+      window.removeEventListener('pointerdown', handlePassiveInteraction);
+      window.removeEventListener('scroll', handlePassiveInteraction);
+    };
   }, []);
 
   // Initialize Turso schema and seed data
@@ -213,23 +249,36 @@ export const App: React.FC = () => {
   const totalCartPrice = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
 
   return (
-    <div className="min-h-screen w-full bg-[#FAF8F5] text-stone-900 flex flex-col selection:bg-[#F06522] selection:text-white">
-      {/* 1. Full-Width Edge-to-Edge Sticky Navbar */}
-      <Navbar
-        cartCount={totalCartCount}
-        cartTotal={totalCartPrice}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOrderClick={() => setIsCartOpen(true)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        currentLocation={currentLocation}
-        onLocationChange={setCurrentLocation}
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-        onOpenPrivacyPolicy={() => handleNavigateView('privacidad')}
-        activeView={activeView}
-        onNavigateView={handleNavigateView}
-      />
+    <div className="min-h-screen w-full bg-[#FAF8F5] text-stone-900 flex flex-col selection:bg-[#F06522] selection:text-white pb-14 md:pb-0">
+      {/* 0. Fancy Smooth Curtain Intro Animation */}
+      {activeView !== 'admin' && (
+        <CurtainIntro
+          onComplete={() => {
+            if (videoRef.current && videoRef.current.paused) {
+              videoRef.current.play().catch(() => {});
+            }
+          }}
+        />
+      )}
+
+      {/* 1. Full-Width Edge-to-Edge Sticky Navbar (Hidden on dedicated admin workspace) */}
+      {activeView !== 'admin' && (
+        <Navbar
+          cartCount={totalCartCount}
+          cartTotal={totalCartPrice}
+          onOpenCart={() => setIsCartOpen(true)}
+          onOrderClick={() => setIsCartOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          currentLocation={currentLocation}
+          onLocationChange={setCurrentLocation}
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          onOpenPrivacyPolicy={() => handleNavigateView('privacidad')}
+          activeView={activeView}
+          onNavigateView={handleNavigateView}
+        />
+      )}
 
       {/* Dynamic View Rendering (Dedicated Multi-Page / No Endless Scroll) */}
       {activeView === 'catalogo' && (
@@ -307,14 +356,20 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {activeView === 'admin' && (
+        <div className="flex-1 flex flex-col w-full animate-in fade-in duration-150">
+          <AdminPanel onNavigateView={handleNavigateView} />
+        </div>
+      )}
+
       {activeView === 'inicio' && (
-        <div className="flex-1 flex flex-col w-full min-h-[calc(100vh-130px)] justify-between bg-[#140e0a] animate-in fade-in duration-150">
+        <div className="flex-1 flex flex-col w-full min-h-[calc(100vh-130px)] justify-center bg-[#140e0a] animate-in fade-in duration-150">
           {/* Edge-to-Edge Immersive Hero Section (Exclusive for index.html, no scrolling required) */}
           <section className="relative w-full flex-1 flex items-center justify-center overflow-hidden py-10 sm:py-14 lg:py-16">
             {/* Background Ambient Video with Poster Fallback */}
             <video
               ref={videoRef}
-              className="absolute inset-0 w-full h-full object-cover scale-102"
+              className="absolute inset-0 w-full h-full object-cover scale-102 pointer-events-none"
               autoPlay
               loop
               muted
@@ -324,8 +379,9 @@ export const App: React.FC = () => {
               poster={heroPoster}
               src={heroVideo}
             >
-              <source src={heroWebm} type="video/webm" />
+              {/* Universal MP4 (H.264) first for iOS Safari and Android WebView compatibility */}
               <source src={heroVideo} type="video/mp4" />
+              <source src={heroWebm} type="video/webm" />
             </video>
 
             {/* Editorial Gradient Overlays */}
@@ -334,8 +390,8 @@ export const App: React.FC = () => {
 
             {/* Hero Content Container */}
             <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white flex flex-col items-center">
-              {/* Main Editorial Headline with Poppins Type Specimen */}
-              <h1 className="font-poppins text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-[-0.03em] text-white drop-shadow-md max-w-4xl leading-[1.08]">
+              {/* Main Editorial Headline with Minimalist Display Typography */}
+              <h1 className="font-display text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tightest text-white drop-shadow-md max-w-4xl leading-[1.08]">
                 Todo lo que tu hogar necesita,{' '}
                 <span className="font-extrabold text-white block sm:inline drop-shadow-md">
                   fresco y al mejor precio
@@ -343,7 +399,7 @@ export const App: React.FC = () => {
               </h1>
 
               {/* Subtitle */}
-              <p className="font-poppins mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-stone-200 max-w-2xl font-normal leading-relaxed drop-shadow-xs">
+              <p className="font-sans mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-stone-200 max-w-2xl font-normal leading-relaxed drop-shadow-xs">
                 Abarrotes, frutas seleccionadas, carnes certificadas Colanta, lácteos de Santa Rosa y domicilios express directo a tu puerta.
               </p>
 
@@ -354,7 +410,7 @@ export const App: React.FC = () => {
                     e.preventDefault();
                     handleNavigateView('catalogo');
                   }}
-                  className="relative flex items-center bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-1.5 border border-white/80 focus-within:ring-2 focus-within:ring-[#F06522]"
+                  className="relative flex items-center bg-white/95 backdrop-blur-md rounded-xl shadow-2xl p-1.5 border border-white/80 focus-within:ring-2 focus-within:ring-[#F06522] min-h-[48px]"
                 >
                   <Search size={18} className="text-stone-400 ml-3.5 shrink-0" />
                   <input
@@ -362,11 +418,11 @@ export const App: React.FC = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="¿Qué necesitas hoy? Ej. Aguacates, lomo Colanta, leche..."
-                    className="w-full px-3 py-2 text-xs sm:text-sm text-stone-900 bg-transparent focus:outline-hidden placeholder:text-stone-400 font-poppins"
+                    className="w-full px-3 py-2 text-xs sm:text-sm text-stone-900 bg-transparent focus:outline-hidden placeholder:text-stone-400 font-sans"
                   />
                   <button
                     type="submit"
-                    className="bg-[#F06522] hover:bg-[#d94f13] text-white px-5 sm:px-6 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm cursor-pointer font-poppins"
+                    className="bg-[#F06522] hover:bg-[#d94f13] text-white px-5 sm:px-6 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm cursor-pointer font-sans min-h-[44px] flex items-center justify-center"
                   >
                     Buscar
                   </button>
@@ -374,11 +430,11 @@ export const App: React.FC = () => {
               </div>
 
               {/* Action CTAs & Dedicated Page Portals */}
-              <div className="mt-7 sm:mt-8 flex gap-2.5 sm:gap-3.5 flex-wrap justify-center items-center">
+              <div className="mt-7 sm:mt-8 flex gap-2.5 sm:gap-3.5 flex-wrap justify-center items-center w-full px-2">
                 <button
                   type="button"
                   onClick={() => handleNavigateView('catalogo')}
-                  className="inline-flex items-center gap-2.5 bg-[#F06522] hover:bg-[#ea580c] text-white font-semibold rounded-xl pl-6 pr-3 py-2.5 sm:py-3 text-xs sm:text-sm shadow-xl shadow-orange-950/30 hover:shadow-orange-500/30 transition-all hover:scale-102 active:scale-98 cursor-pointer group"
+                  className="inline-flex items-center justify-center gap-2.5 bg-[#F06522] hover:bg-[#ea580c] text-white font-semibold rounded-xl pl-6 pr-3 py-2.5 sm:py-3 text-xs sm:text-sm shadow-xl shadow-orange-950/30 hover:shadow-orange-500/30 transition-all hover:scale-102 active:scale-98 cursor-pointer group min-h-[44px]"
                 >
                   <span>Ver Catálogo (8 Pasillos)</span>
                   <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
@@ -389,7 +445,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleNavigateView('servicios')}
-                  className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer min-h-[44px]"
                 >
                   <span>Servicios & Colanta</span>
                 </button>
@@ -397,7 +453,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleNavigateView('avisos')}
-                  className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer min-h-[44px]"
                 >
                   <span>Avisos Comunitarios</span>
                 </button>
@@ -405,53 +461,18 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleNavigateView('empleo')}
-                  className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white font-medium rounded-xl px-4 sm:px-5 py-2.5 sm:py-3 text-xs sm:text-sm border border-white/30 shadow-lg shadow-black/15 transition-all hover:scale-102 active:scale-98 cursor-pointer min-h-[44px]"
                 >
                   <span>Trabaja con Nosotros</span>
                 </button>
               </div>
             </div>
           </section>
-
-          {/* Compact Index Footer */}
-          <div className="w-full bg-[#1c140e] border-t border-white/10 py-4 px-4 sm:px-6 lg:px-8 text-center text-xs text-stone-400">
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center sm:justify-start">
-                <span className="font-bold text-white">Supermercado Osos</span>
-                <span>ARANGO HERMANOS S.A.S</span>
-                <span>Santa Rosa de Osos, Antioquia</span>
-              </div>
-              <div className="flex items-center gap-x-4 gap-y-1 text-[11px] flex-wrap justify-center sm:justify-end">
-                <button
-                  type="button"
-                  onClick={() => handleNavigateView('contacto')}
-                  className="hover:text-white transition-colors cursor-pointer"
-                >
-                  Contacto: (604) 860-8899
-                </button>
-                <a
-                  href="https://wa.me/573105550199"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
-                  WhatsApp: 310 555 0199
-                </a>
-                <button
-                  type="button"
-                  onClick={() => handleNavigateView('privacidad')}
-                  className="hover:text-white transition-colors cursor-pointer underline"
-                >
-                  Tratamiento de Datos
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Comprehensive Supermarket Footer (Displayed on dedicated section pages) */}
-      {activeView !== 'inicio' && (
+      {/* Comprehensive Supermarket Footer (Displayed on dedicated section pages, hidden on admin) */}
+      {activeView !== 'inicio' && activeView !== 'admin' && (
         <footer className="w-full bg-[#241711] text-stone-300 py-12 px-4 sm:px-6 lg:px-8 mt-auto border-t border-stone-800">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-stone-800 text-xs">
             {/* Col 1: Brand & Legal Information */}
@@ -721,7 +742,7 @@ export const App: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 bg-[#241711] text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-200"
+          className="fixed bottom-18 md:bottom-6 right-4 sm:right-6 z-50 bg-[#241711] text-white text-xs sm:text-sm font-semibold px-4 py-3 rounded-2xl shadow-2xl border border-stone-700 flex items-center gap-2 animate-in slide-in-from-bottom-4 duration-200"
         >
           <Sparkles size={16} className="text-[#FED7AA] shrink-0" />
           <span>{toastMessage}</span>

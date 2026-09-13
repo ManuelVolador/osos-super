@@ -202,13 +202,13 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {filteredProducts.map((product) => {
             const isAdded = !!addedIds[product.id];
             return (
               <article
                 key={product.id}
-                className="bg-white rounded-xl border border-stone-200 shadow-2xs hover:shadow-md hover:border-stone-300 transition-all duration-200 flex flex-col justify-between overflow-hidden group"
+                className="bg-white rounded-xl border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-stone-300 transition-all duration-200 flex flex-col justify-between overflow-hidden group touch-press"
               >
                 <div>
                   {/* Image Container with Badges */}
@@ -225,25 +225,25 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
 
                     {/* Badge */}
                     {product.badge && (
-                      <div className="absolute top-2.5 left-2.5 z-10">
+                      <div className="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 z-10">
                         {product.badgeType === 'discount' ? (
-                          <span className="inline-flex items-center gap-1 bg-[#16a34a] text-white text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
-                            <Flame size={12} />
+                          <span className="inline-flex items-center gap-1 bg-[#16a34a] text-white text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-xs shadow-xs">
+                            <Flame size={11} />
                             {product.badge}
                           </span>
                         ) : product.badgeType === 'fresh' ? (
-                          <span className="inline-flex items-center gap-1 bg-stone-800 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
-                            <Leaf size={12} />
+                          <span className="inline-flex items-center gap-1 bg-stone-800 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-xs shadow-xs">
+                            <Leaf size={11} />
                             {product.badge}
                           </span>
                         ) : product.badgeType === 'colanta' ? (
-                          <span className="inline-flex items-center gap-1 bg-red-700 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
-                            <Beef size={12} />
+                          <span className="inline-flex items-center gap-1 bg-red-700 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-xs shadow-xs">
+                            <Beef size={11} />
                             {product.badge}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 bg-[#5A3825] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-sm shadow-xs">
-                            <Award size={12} />
+                          <span className="inline-flex items-center gap-1 bg-[#5A3825] text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-0.5 rounded-xs shadow-xs">
+                            <Award size={11} />
                             {product.badge}
                           </span>
                         )}
@@ -251,38 +251,38 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     )}
 
                     {/* Category tag */}
-                    <div className="absolute bottom-2.5 left-2.5">
-                      <span className="bg-white/95 backdrop-blur-xs text-stone-800 text-[10px] font-semibold px-2 py-0.5 rounded-sm border border-stone-200 shadow-2xs">
+                    <div className="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5">
+                      <span className="bg-white/95 backdrop-blur-xs text-stone-800 text-[9px] sm:text-[10px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-xs border border-stone-200 shadow-2xs">
                         {product.categoryLabel}
                       </span>
                     </div>
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-4">
-                    <h3 className="font-editorial font-bold text-stone-900 text-sm sm:text-base leading-snug group-hover:text-[#F06522] transition-colors">
+                  <div className="p-3 sm:p-4">
+                    <h3 className="font-editorial font-bold text-stone-900 text-xs sm:text-base leading-snug group-hover:text-[#F06522] transition-colors line-clamp-2">
                       {product.name}
                     </h3>
-                    <p className="text-xs text-stone-600 mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-[11px] sm:text-xs text-stone-600 mt-1 line-clamp-2 leading-relaxed hidden xs:block">
                       {product.description}
                     </p>
                   </div>
                 </div>
 
                 {/* Card Footer: Price & Add Button */}
-                <div className="p-4 pt-0 border-t border-stone-100 mt-2 flex items-center justify-between gap-2">
+                <div className="p-3 sm:p-4 pt-0 border-t border-stone-100 mt-1 sm:mt-2 flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 sm:gap-2">
                   <div className="flex flex-col">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-base sm:text-lg font-black text-[#5A3825] font-editorial">
+                    <div className="flex items-baseline gap-1 sm:gap-1.5 flex-wrap">
+                      <span className="text-sm sm:text-base md:text-lg font-black text-[#5A3825] font-editorial tabular-nums tracking-tight">
                         ${product.price.toLocaleString('es-CO')}
                       </span>
                       {product.originalPrice && (
-                        <span className="text-xs text-stone-400 line-through">
+                        <span className="text-[10px] sm:text-xs text-stone-400 line-through tabular-nums">
                           ${product.originalPrice.toLocaleString('es-CO')}
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-stone-500 font-medium">
+                    <span className="text-[10px] sm:text-[11px] text-stone-500 font-medium">
                       por {product.unit}
                     </span>
                   </div>
@@ -292,7 +292,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                     type="button"
                     onClick={() => handleAddProduct(product)}
                     aria-label={`Agregar ${product.name} al carrito`}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs ${
+                    className={`inline-flex items-center justify-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs shrink-0 ${
                       isAdded
                         ? 'bg-[#16a34a] text-white shadow-emerald-500/20'
                         : 'bg-[#F06522] hover:bg-[#d94f13] text-white hover:shadow-orange-500/25'
@@ -300,12 +300,12 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
                   >
                     {isAdded ? (
                       <>
-                        <Check size={14} className="stroke-[3]" />
+                        <Check size={13} className="stroke-[3]" />
                         <span>¡Agregado!</span>
                       </>
                     ) : (
                       <>
-                        <Plus size={14} className="stroke-[2.5]" />
+                        <Plus size={13} className="stroke-[2.5]" />
                         <span>Agregar</span>
                       </>
                     )}

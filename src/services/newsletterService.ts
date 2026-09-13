@@ -49,3 +49,38 @@ export async function subscribeNewsletter(email: string): Promise<{ success: boo
     };
   }
 }
+
+export async function fetchSubscribers(): Promise<{ id: string; email: string; createdAt: string }[]> {
+  try {
+    await initTursoDatabase();
+    const client = getTursoClient();
+    const res = await client.execute('SELECT * FROM subscribers ORDER BY created_at DESC');
+
+    if (res.rows.length > 0) {
+      const dbSubs = res.rows.map((row) => ({
+        id: String(row.id),
+        email: String(row.email),
+        createdAt: String(row.created_at ?? ''),
+      }));
+
+      const existingEmails = new Set(dbSubs.map((s) => s.email.toLowerCase()));
+      const pendingMemory = Array.from(memorySubscribers)
+        .filter((email) => !existingEmails.has(email.toLowerCase()))
+        .map((email, idx) => ({
+          id: `mem-sub-${idx}`,
+          email,
+          createdAt: new Date().toISOString(),
+        }));
+
+      return [...pendingMemory, ...dbSubs];
+    }
+  } catch (error) {
+    console.warn('Turso fetchSubscribers offline fallback:', error);
+  }
+
+  return Array.from(memorySubscribers).map((email, idx) => ({
+    id: `mem-sub-${idx}`,
+    email,
+    createdAt: new Date().toISOString(),
+  }));
+}

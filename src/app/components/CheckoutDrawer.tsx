@@ -34,15 +34,19 @@ export interface PlacedOrder {
   orderNumber: string;
   items: CartItem[];
   subtotal: number;
-  discount: number;
+  discount?: number;
   shipping: number;
   total: number;
   address: string;
-  notes: string;
+  notes?: string;
   slot: string;
   paymentMethod: string;
   paymentDetails?: string;
-  estimatedMinutes: string;
+  estimatedMinutes?: string;
+  status?: string;
+  createdAt?: string;
+  customerName?: string;
+  customerPhone?: string;
 }
 
 interface CheckoutDrawerProps {
@@ -911,7 +915,7 @@ export const CheckoutDrawer: React.FC<CheckoutDrawerProps> = ({
                 )}
               </div>
 
-              <div className="flex items-center justify-between text-base font-black text-stone-900 pt-2 border-t border-stone-200 font-editorial">
+              <div className="flex items-center justify-between text-base font-black text-stone-900 pt-2 border-t border-stone-200 font-editorial tabular-nums">
                 <span>Total</span>
                 <span className="text-lg text-[#5A3825] font-black">${grandTotal.toLocaleString('es-CO')}</span>
               </div>
